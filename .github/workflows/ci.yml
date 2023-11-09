@@ -1,0 +1,55 @@
+# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+name: ci-test
+
+# Controls when the workflow will run
+# Triggers the workflow on push or pull request events but only for the "main" branch
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches: 
+      - main
+      - develop
+
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+      
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Build and Run tests
+      run: ./gradlew build
+
+    - name: Publish Test Report
+      uses: EnricoMi/publish-unit-test-result-action@v1
+      if: always()
+      with:
+        files: 'build/test-results/test/TEST-*.xml'
+
+    - name: If the test fails, register a check comment in the failed code line
+      uses: mikepenz/action-junit-report@v3
+      if: failure()
+      with:
+        report_paths: 'build/test-results/test/TEST-*.xml'
+        token: ${{ github.token }}
